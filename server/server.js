@@ -3,8 +3,8 @@ var bodyParser = require('body-parser');
 var app = express();
 var _ = require('lodash');
 var url = require("url"),
-    path = require("path"),
-    fs = require("fs");
+path = require("path"),
+fs = require("fs");
 
 app.use(express.static('client'));
 app.use(bodyParser.urlencoded({extended: true}));
@@ -36,35 +36,8 @@ function parseQueryString(parmStr) {
     return map;
   }
 
-  app.get('/convert', function(req, res){
-    var reqUrl = req.url;
-    console.log("reqUrl:"+reqUrl);
-    var uri = url.parse(reqUrl).pathname
-    , filename = path.join(process.cwd(), uri);
-
-    var contentTypesByExtension = {
-      '.html': "text/html",
-      '.css':  "text/css",
-      '.js':   "text/javascript"
-    };
-    console.log(parseQueryString(reqUrl));
-    console.log("filename", filename);
-
-    var pathName = url.parse(reqUrl).pathname;
-    console.log("Request for " + pathName + " received");
-if (typeof filename != 'undefined' && filename.indexOf("convert") > -1 ) {
-    // asking for a file to convert
-    var parmMap = parseQueryString(reqUrl);
-    var file = parmMap["file"];
-    var type = parmMap["type"];
-    console.log("file:"+file+" type:"+type);
-    response.writeHead(500, {"Content-Type": "text/plain"});
-    response.write("Convert:" + parmMap['file'] + ' ' + parmMap['type']);
-    response.end();
-    return;
-  }
-
-  fs.exists(filename, function(exists) {
+  function dumpFile(filename, response) {
+    fs.exists(filename, function(exists) {
     if(!exists) {
       response.writeHead(404, {"Content-Type": "text/plain"});
       response.write("404 Not Found\n");
@@ -89,13 +62,43 @@ if (typeof filename != 'undefined' && filename.indexOf("convert") > -1 ) {
       response.write(file, "binary");
       response.end();
     });
-  });
-    res.writeHead(200, {'Content-Type': 'text/plain'});
-    res.write('hello');
-    res.write(':');
-    console.log("convert");
-    res.end();
-  });
+    });
+  }
 
-  app.listen(3000);
-  console.log('on port 3000');
+  app.get('/convert', function(req, res){
+    var reqUrl = req.url;
+    console.log("reqUrl:"+reqUrl);
+    var uri = url.parse(reqUrl).pathname
+    , filename = path.join(process.cwd(), uri);
+
+    var contentTypesByExtension = {
+      '.html': "text/html",
+      '.css':  "text/css",
+      '.js':   "text/javascript"
+    };
+    console.log(parseQueryString(reqUrl));
+    console.log("filename", filename);
+
+    var pathName = url.parse(reqUrl).pathname;
+    console.log("Request for " + pathName + " received");
+    if (typeof filename != 'undefined' && filename.indexOf("convert") > -1 ) {
+    // asking for a file to convert
+    var parmMap = parseQueryString(reqUrl);
+    var file = parmMap["file"];
+    var type = parmMap["type"];
+    console.log("file:"+file+" type:"+type);
+    res.writeHead(500, {"Content-Type": "text/plain"});
+    res.write("Convert:" + parmMap['file'] + ' ' + parmMap['type']);
+    res.end();
+    return;
+  }
+
+  res.writeHead(200, {'Content-Type': 'text/plain'});
+  res.write('hello');
+  res.write(':');
+  console.log("convert");
+  res.end();
+});
+
+app.listen(3000);
+console.log('on port 3000');
