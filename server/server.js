@@ -35,33 +35,52 @@ function parseQueryString(parmStr) {
     //}
     return map;
   }
+  
+  function ConvertToHex(numberValue){
+    var decNumber = Number(numberValue);
+    return decNumber.toString(16).toUpperCase();
+  }
 
-  function dumpFile(filename, response) {
-    fs.exists(filename, function(exists) {
-    if(!exists) {
-      response.writeHead(404, {"Content-Type": "text/plain"});
-      response.write("404 Not Found\n");
-      response.end();
-      return;
-    }
+  function ConvertToDec(hexNumber){
+    return parseInt(hexNumber,16);
+  }
 
-    if (fs.statSync(filename).isDirectory()) filename += '/index.html';
-
-    fs.readFile(filename, "binary", function(err, file) {
+  function dumpFile(filename, type, response) {
+    filename = "/Users/jsymolon/arm/" + filename;
+    console.log("filename:"+filename);
+    fs.readFile(filename, "binary", function(err, data) {
       if(err) {
         response.writeHead(500, {"Content-Type": "text/plain"});
         response.write(err + "\n");
         response.end();
-        return;
       }
-
-      var headers = {};
-      var contentType = contentTypesByExtension[path.extname(filename)];
-      if (contentType) headers["Content-Type"] = contentType;
-      response.writeHead(200, headers);
-      response.write(file, "binary");
+//      var line1 = {};
+//    line1["00000000"] = [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f];
+//    file_val.push(line1);
+//    line1 = {};
+//    line1["00000016"] = [0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f];
+//    file_val.push(line1);
+      //console.log(data.length);
+      //console.log(data);
+      var addr = 0;
+      var d_len = data.length;
+      //d_len = 8;
+      var cur_data = 0;
+      var line1 = {};
+      while (cur_data <= d_len) {
+        var i = 0;
+        var buffer = [];
+        while (i < 16 && cur_data + i < d_len) {
+          console.log("i:" + i + " cd:" + cur_data + " d:" + data[cur_data + i]);
+          buffer[i] = data[cur_data + i];
+          i++;
+        }
+        line1[addr] = buffer;
+        addr += 16;
+        cur_data += 16;
+      }
+      response.json(line1);
       response.end();
-    });
     });
   }
 
@@ -87,9 +106,10 @@ function parseQueryString(parmStr) {
     var file = parmMap["file"];
     var type = parmMap["type"];
     console.log("file:"+file+" type:"+type);
-    res.writeHead(500, {"Content-Type": "text/plain"});
-    res.write("Convert:" + parmMap['file'] + ' ' + parmMap['type']);
-    res.end();
+//    res.writeHead(500, {"Content-Type": "text/plain"});
+//    res.write("Convert:" + parmMap['file'] + ' ' + parmMap['type']);
+//    res.end();
+    dumpFile(file, type, res);
     return;
   }
 
