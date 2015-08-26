@@ -1,32 +1,21 @@
 QUnit.test( "elf loader test", function( assert ) {
-   // load test data {"length":"00000313"},
-   //                {"data":"7f 45 4c 46 01 01 01 00 00 00 00 00 00 00 00 00"},
-   ELF.ElfData = [];
    ELF.ElfDataIdx = 0;
-   ELF.RawElfData = [];
    ELF.RawElfDataIdx = 0;
    ELF.ElfProgLen = 0;
    ELF.curLine = -1; // nothing loaded/read yet or exhausted
    ELF.RawElfDataIdx = 0;
    ELF.ElfData = new Uint8Array(window.memory);
-   var vdata = "7f 45 4c 46 01 01 01 00 00 00 00 00 00 00 00 11";
-   ELF.RawElfData = '{"length":"00000313"},{"data":"' + vdata + '"},';
-   assert.equal( ELF.readItemFrom(), "length", "Value" );
-   assert.equal( ELF.readItemFrom(), "00000313", "Value" );
-   assert.equal( ELF.readItemFrom(), "data", "Value" );
-   assert.equal( ELF.readItemFrom(), vdata, "Value" );
-   ELF.ElfData = [];
-   ELF.ElfDataIdx = 0;
-   ELF.RawElfData = [];
-   ELF.RawElfDataIdx = 0;
-   ELF.ElfProgLen = 0;
-   ELF.curLine = -1; // nothing loaded/read yet or exhausted
-   ELF.RawElfDataIdx = 0;
-   ELF.ElfData = new Uint8Array(window.memory);
-   ELF.RawElfData = '{"length":"00000313"},{"data":"' + vdata + '"},';
-   ELF.readLineFrom();
-   assert.equal( ELF.ElfData[0], 0x7f, "data");
-   assert.equal( ELF.ElfData[15], 0x11, "data");
+   var testdata = "{\"0\":[127,69,76,70,1,1,1,0,0,0,0,0,0,0,0,0],\"16\":[]}";
+   ELF.RawElfData = testdata;
+   //ELF.readLineFrom();
+   ELF.parseJSON();
+   var odata = JSON.stringify(ELF.ElfData);
+   assert.equal(odata, testdata, "hash");
+   
+   // test individual elements
+   var arr = ELF.ElfData[0]; // "address" - 0
+   assert.equal( arr[0], 0x7f, "data");
+   assert.equal( arr[5], 0x01, "data");
    // see if reading byte from end exits cleanly
    for (i=0; i<16; i++) {
       x = ELF.readByte(i);
@@ -36,5 +25,7 @@ QUnit.test( "elf loader test", function( assert ) {
    console.log("test exit - i:"+16+" x:"+y);
    y = ELF.readByte(17);
    console.log("test exit - i:"+17+" x:"+y);
+
    // now do the big file
+   my elf = new ELF();
 });

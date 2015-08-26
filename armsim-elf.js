@@ -69,95 +69,49 @@ var CONST_ELF_HDR = {
 var ELF = (function () {
    var my = {};
    var ElfData;
-   var ElfDataIdx;
-   var RawElfData ;
-   var RawElfDataIdx;
+   var RawElfData;
    var ElfProgLen;
    var curLine ; // nothing loaded/read yet or exhausted
    var littleEndian;
    
-   my.readItemFrom = function() { // read " to "
-      var istr = "";
-      var i = this.RawElfDataIdx;
-      var c = this.RawElfData[i];
-      var l = this.RawElfData.length;
-      do {
-         //console.log("readItemFrom1: i:"+i+" c:"+c);
-         i++;
-         c = this.RawElfData[i];
-      } while (c !== '"' && i <= l);
-      i++;
-      c = this.RawElfData[i];
-      // read till end
-      while (c !== '"' && i <= l) {
-         //console.log("readItemFrom2: i:"+i+" c:"+c+" istr:"+istr);
-         istr += c;
-         i++;
-         c = this.RawElfData[i];
-      }
-      this.RawElfDataIdx = i;
-      //console.log("RawElfDataIdx:"+this.RawElfDataIdx);
-      console.log("readItemFrom:"+istr+" L:"+l);
-      return istr;
+   my.parseJSON = function() {
+      this.ElfData = JSON.parse(this.RawElfData);
    }
 
-   my.loadElfDataFromRaw = function(rdata) {
+   my.loadElfDataFromRaw = function() {
       curLine = 1;
-      var i = 0;
-      var rdLen = rdata.length;
-      while (i<rdLen) {
-         var c = rdata[i];
-         var ival = 0;
-         do {
-            if (c >= '0' && c <= '9') {
-               ival *= 16;
-               ival += c - '0';
-            }
-            if (c >= 'a' && c <= 'f') {
-               ival *= 16;
-               ival += (c.charCodeAt(0) - 'a'.charCodeAt(0)) + 10;
-            }
-            if (c >= 'A' && c <= 'F') {
-               ival *= 16;
-               ival += (c.charCodeAt(0) - 'a'.charCodeAt(0)) + 10;
-            }
+      var RawAddr = 0;
+      var rdLen = 1;
+      while (rdLen > 0) {
+        var rdata = RawElfData[RawAddr];
+        rdLen = rdata.length;
+        if (rdLen > 0) {
+          var i = 0;
+          while (i < 16) { 
+            this.ElfData[RawAddr + i] = rdata[i];
             i++;
-            c = rdata[i];
-         } while (c !== ' ' && i<rdLen);
-         this.ElfData[this.ElfDataIdx] = ival;
-         this.ElfDataIdx++;
-         console.log("ElfDataIdx:"+this.ElfDataIdx+" ival:"+ival);
-         i++;
+          }
+        }
+        RawAddr += 16;
       }
    }
-
-   my.readLineFrom = function() {
-      // RawElfData should be loaded w/ JSON data,
-      var itemVar = my.readItemFrom();
-      if (itemVar === "length") {
-        this.ElfProgLen = my.readItemFrom();
-        itemVar = my.readItemFrom();
-      }
-      if (itemVar === "data") {
-        itemVar = my.readItemFrom();
-      }
-      my.loadElfDataFromRaw(itemVar);
-   };
 
    my.readByte = function (idx) {
-      if (curLine === -1 || idx >= this.ElfDataIdx) {
-         my.readLineFrom();
+      if (curLine === -1) {
+         my.loadElfDataFromRaw();
       }
       var item = this.ElfData[idx];
       console.log("i:"+idx+" b:"+item);
       return item;
    };
+
    my.readWord = function (idx) {
       var wordv = my.readByte(idx + 1);
       wordv = wordv << 8;
       wordv = wordv | my.readByte(idx);
       return wordv;
    };
+
    my.readLong = function (idx) {
       var longv = my.readWord(idx + 2);
       longv = longv << 16;
@@ -230,13 +184,13 @@ var ELF = (function () {
 
      return true;
    };
+
    my.parseElfSection = function (idx) {};
    my.parseElfStrings = function (idx) {};
    my.parseElfSymbols  = function (idx) {};
+
    my.parseElf = function () {
-      this.ElfData = new Uint8Array(window.memory);
       console.log("parseElf called");
-      RawElfData = $("#elf").text();
       //console.log(RawElfData);
       var ElfOK = my.parseElfHeader(0);  // idx = 0 for start of file
       if (!ElfOK) {
@@ -244,6 +198,7 @@ var ELF = (function () {
       }
       return true;
    };
+
    (function () {
       this.ElfData = [];
       this.ElfDataIdx = 0;
@@ -252,8 +207,16 @@ var ELF = (function () {
       this.ElfProgLen = 0;
       this.curLine = -1; // nothing loaded/read yet or exhausted
       this.littleEndian = 0;
+      this.ElfData = new Uint8Array(window.memory);
       $("#source").load("adc.lst");
-      $("#elf").load("adc.json", function() { var parse = my.parseElf(); if (!parse) { console.log("not a good elf file"); } });
+      //$("#elf").load("adc.json", function() { var parse = my.parseElf(); if (!parse) { console.log("not a good elf file"); } });
+      $.get("localhost:3000/convert?file=adc.elf&type=json", function( data ) {
+        RawElfData = data;
+        parseJSON();
+        var parse = my.parseElf(); 
+        if (!parse) { console.log("not a good elf file"); }
+        alert( "Load was performed." );
+      });
    })();
    return my;
 }());

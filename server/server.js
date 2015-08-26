@@ -48,10 +48,10 @@ function parseQueryString(parmStr) {
   function dumpFile(filename, type, response) {
     filename = "/Users/jsymolon/arm/" + filename;
     console.log("filename:"+filename);
-    fs.readFile(filename, "binary", function(err, data) {
-      if(err) {
+    fs.open(filename, 'r', function(status, fd) {
+      if (status) {
         response.writeHead(500, {"Content-Type": "text/plain"});
-        response.write(err + "\n");
+        response.write(status.message + "\n");
         response.end();
       }
 //      var line1 = {};
@@ -63,21 +63,23 @@ function parseQueryString(parmStr) {
       //console.log(data.length);
       //console.log(data);
       var addr = 0;
-      var d_len = data.length;
-      //d_len = 8;
-      var cur_data = 0;
       var line1 = {};
-      while (cur_data <= d_len) {
+      var not_done = 1;
+      var bytesRead = 1;
+      while (bytesRead > 0) {
+        var cpbuf = [];
+        var buffer = new Buffer(16);
+        bytesRead = fs.readSync(fd, buffer, 0, 16);
+        console.log("br:" + bytesRead);
+        console.log(buffer.toString('utf8', 0, bytesRead));
         var i = 0;
-        var buffer = [];
-        while (i < 16 && cur_data + i < d_len) {
-          console.log("i:" + i + " cd:" + cur_data + " d:" + data[cur_data + i]);
-          buffer[i] = data[cur_data + i];
+        while (i < 16 && i < bytesRead) {
+          console.log("i:" + i + " d:" + buffer[i]);
+          cpbuf[i] = buffer[i];
           i++;
         }
-        line1[addr] = buffer;
+        line1[addr] = cpbuf;
         addr += 16;
-        cur_data += 16;
       }
       response.json(line1);
       response.end();
