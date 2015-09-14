@@ -27,5 +27,5 @@ QUnit.test( "elf loader test", function( assert ) {
    console.log("test exit - i:"+17+" x:"+y);
 
    // now do the big file
-   my elf = new ELF();
+   var elf = new ELF();
 });
