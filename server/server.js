@@ -3,7 +3,8 @@ var bodyParser = require('body-parser');
 var app = express();
 var _ = require('lodash');
 var sh = require('shelljs');
-var url = require("url"),
+var http = require("http"),
+    url = require("url"),
 path = require("path"),
 fs = require("fs");
 
@@ -152,6 +153,53 @@ app.get('/get_list', function(req, res) {
     console.log(parseQueryString(reqUrl));
     dumpFileList(cwd, res);
     return;
+});
+
+// the generic html service
+app.get('/', function(req, res){
+  console.log("filename", filename);
+
+  var pathName = url.parse(reqUrl).pathname;
+  console.log("Request for " + pathName + " received");
+
+  if (typeof filename != 'undefined' && filename.indexOf("convert") > -1 ) {
+    // asking for a file to convert
+    var parmMap = parseQueryString(reqUrl);
+    var file = parmMap["file"];
+    var type = parmMap["type"];
+    console.log("file:"+file+" type:"+type);
+    response.writeHead(500, {"Content-Type": "text/plain"});
+    response.write("Convert:" + parmMap['file'] + ' ' + parmMap['type']);
+    response.end();
+    return;
+  }
+
+  fs.exists(filename, function(exists) {
+    if(!exists) {
+      response.writeHead(404, {"Content-Type": "text/plain"});
+      response.write("404 Not Found\n");
+      response.end();
+      return;
+    }
+
+    if (fs.statSync(filename).isDirectory()) filename += '/index.html';
+
+    fs.readFile(filename, "binary", function(err, file) {
+      if(err) {
+        response.writeHead(500, {"Content-Type": "text/plain"});
+        response.write(err + "\n");
+        response.end();
+        return;
+      }
+
+      var headers = {};
+      var contentType = contentTypesByExtension[path.extname(filename)];
+      if (contentType) headers["Content-Type"] = contentType;
+      response.writeHead(200, headers);
+      response.write(file, "binary");
+      response.end();
+    });
+  });
 });
 
 app.listen(3000);
