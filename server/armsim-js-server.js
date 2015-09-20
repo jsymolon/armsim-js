@@ -6,7 +6,11 @@ var express = require('express')
   , get_list = require('./get_list')
   , convert = require('./convert')
   , http = require('http')
-  , path = require('path');
+  , url = require("url")
+  , path = require("path")
+  , fs = require("fs");
+var sh = require('shelljs');
+var cwd = sh.pwd() + "/../../arm";
 
 var app = express();
 
@@ -57,6 +61,16 @@ function dumpFileList(lookatpath, response) {
     });
     response.json(line1);
   });
+}
+
+function parseQueryString(parmStr) {
+  var qidx = parmStr.indexOf("?") + 1;
+  var query = parmStr.substr(qidx, parmStr.length - qidx), map   = {};
+  console.log("query:"+query);
+  query.replace(/([^&=]+)=?([^&]*)(?:&+|$)/g, function(match, key, value) {
+    (map[key] = map[key] || []).push(value);
+  });
+  return map;
 }
 
 //Routes
