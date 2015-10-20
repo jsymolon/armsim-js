@@ -69,41 +69,19 @@ var CONST_ELF_HDR = {
 };
 
 var ELF = (function() {
-   var my = {},
-   ElfData = "",
-   RawElfData = "",
-   curLine = 0, // nothing loaded/read yet or exhausted
-   littleEndian = 0;
+   var my = {};
+   my.ElfData = "",
+   my.RawElfData = "",
+   my.loaded = false, // nothing loaded/read yet or exhausted
+   my.littleEndian = 0;
+   my.lastAddress = 0;
 
    my.parseJSON = function() {
-      ElfData = JSON.parse(RawElfData);
-   };
-
-   my.loadElfDataFromRaw = function() {
-      curLine = 1;
-      var RawAddr = 0;
-      var rdLen = 1;
-      var rdata;
-      var i;
-      while (rdLen > 0) {
-        rdata = RawElfData[RawAddr];
-        rdLen = rdata.length;
-        if (rdLen > 0) {
-          i = 0;
-          while (i < 16) {
-            ElfData[RawAddr + i] = rdata[i];
-            i = i + 1;
-          }
-        }
-        RawAddr += 16;
-      }
+      my.ElfData = JSON.parse(my.RawElfData);
    };
 
    my.readByte = function(idx) {
-      if (curLine === -1) {
-         my.loadElfDataFromRaw();
-      }
-      var item = ElfData[idx];
+      var item = my.ElfData[idx];
       console.log("i:"+idx+" b:"+item);
       return item;
    };
@@ -134,55 +112,55 @@ var ELF = (function() {
         return false;
      }
      var index = 16;
-     var e_type = my.readWord(index);
+     my.e_type = my.readWord(index);
      index += CONST_ELF_TYPES.Elf32_Half;
      console.log("e_type:" + e_type);
 
-     var e_machine = my.readWord(index);
+     my.e_machine = my.readWord(index);
      index += CONST_ELF_TYPES.Elf32_Half;
      console.log("e_machine:" + e_machine);
 
-     var e_version = my.readLong(index);
+     my.e_version = my.readLong(index);
      index += CONST_ELF_TYPES.Elf32_Word;
      console.log("e_version:" + e_version);
 
-     var e_entry = my.readLong(index);
+     my.e_entry = my.readLong(index);
      index += CONST_ELF_TYPES.Elf32_Addr;
      console.log("e_entry:" + e_entry);
 
-     var e_phoff = my.readLong(index);
+     my.e_phoff = my.readLong(index);
      index += CONST_ELF_TYPES.Elf32_Off;
      console.log("e_phoff:" + e_phoff);
 
-     var e_shoff = my.readLong(index);
+     my.e_shoff = my.readLong(index);
      index += CONST_ELF_TYPES.Elf32_Off;
      console.log("e_shoff:" + e_shoff);
 
-     var e_flags = my.readLong(index);
+     my.e_flags = my.readLong(index);
      index += CONST_ELF_TYPES.Elf32_Word;
      console.log("e_flags:" + e_flags);
 
-     var e_ehsize = my.readWord(index);
+     my.e_ehsize = my.readWord(index);
      index += CONST_ELF_TYPES.Elf32_Half;
      console.log("e_ehsize:" + e_ehsize);
 
-     var e_phentsize = my.readWord(index);
+     my.e_phentsize = my.readWord(index);
      index += CONST_ELF_TYPES.Elf32_Half;
      console.log("e_phentsize:" + e_phentsize);
 
-     var e_phnum = my.readWord(index);
+     my.e_phnum = my.readWord(index);
      index += CONST_ELF_TYPES.Elf32_Half;
      console.log("e_phnum:" + e_phnum);
 
-     var e_shentsize = my.readWord(index);
+     my.e_shentsize = my.readWord(index);
      index += CONST_ELF_TYPES.Elf32_Half;
      console.log("e_shentsize:" + e_shentsize);
 
-     var e_shnum = my.readWord(index);
+     my.e_shnum = my.readWord(index);
      index += CONST_ELF_TYPES.Elf32_Half;
      console.log("e_shnum:" + e_shnum);
 
-     var e_shstrndx = my.readWord(index);
+     my.e_shstrndx = my.readWord(index);
      index += CONST_ELF_TYPES.Elf32_Half;
      console.log("e_shstrndx:" + e_shstrndx);
 
@@ -191,7 +169,6 @@ var ELF = (function() {
 
    my.parseElf = function () {
       console.log("parseElf called");
-      //console.log(RawElfData);
       var ElfOK = my.parseElfHeader(0);  // idx = 0 for start of file
       if (!ElfOK) {
          return false;
@@ -199,17 +176,18 @@ var ELF = (function() {
       return true;
    };
 
-   my.init = function () {
-      ElfData = [];
-      ElfDataIdx = 0;
-      RawElfData = [];
-      curLine = -1; // nothing loaded/read yet or exhausted
-      littleEndian = 0;
-      ElfData = new Uint8Array(window.memory);
-      $("#source").load("adc.lst");
+   my.init = function (url) {
+      my.ElfData = [];
+      my.RawElfData = [];
+      my.loaded = false; // nothing loaded/read yet or exhausted
+      my.littleEndian = 0;
+      my.lastAddress = 0;
+      my.ElfData = new Uint8Array(window.memory);
+      //$("#source").load("adc.lst");
       //$("#elf").load("adc.json", function() { var parse = my.parseElf(); if (!parse) { console.log("not a good elf file"); } });
-      $.get("localhost:3000/convert?file=adc.elf&type=json", function( data ) {
-        RawElfData = data;
+      $.get(url, function( data ) {
+        console.log(data);
+        my.RawElfData = data;
         my.parseJSON();
         var parse = my.parseElf(); 
         if (!parse) { console.log("not a good elf file"); }

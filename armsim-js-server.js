@@ -15,13 +15,7 @@ var appcwd = sh.pwd();
 
 var app = express();
 
-app.get('/', function(req, res){
-  res.send('hello world');
-});
-
-app.get('/armsim-js', function(req, res){
-  res.send('armsim hello world');
-});
+app.use(express.static(__dirname));
 
 //app.configure(function(){
   //app.set('port', process.env.PORT || 3000);
@@ -167,6 +161,52 @@ function dumpFile(fname, type, response) {
     });
   }
 
+app.get('/get_list', function(req, res){
+  var reqUrl = req.url;
+  console.log("get_list - reqUrl:"+reqUrl+ " cwd:"+cwd);
+  var uri = url.parse(reqUrl).pathname
+    , filename = path.join(process.cwd(), uri);
 
+  var contentTypesByExtension = {
+      '.html': "text/html",
+      '.css':  "text/css",
+      '.js':   "text/javascript"
+  };
+  console.log(parseQueryString(reqUrl));
+  dumpFileList(cwd, res);
+  return;
+});
+
+app.get('/convert', function(req, res){
+  var reqUrl = req.url;
+  console.log("convert - reqUrl:"+reqUrl);
+  var uri = url.parse(reqUrl).pathname
+    , filename = path.join(process.cwd(), uri);
+
+  var contentTypesByExtension = {
+      '.html': "text/html",
+      '.css':  "text/css",
+      '.js':   "text/javascript"
+  };
+  console.log(parseQueryString(reqUrl));
+  console.log("filename", filename);
+
+  var pathName = url.parse(reqUrl).pathname;
+  console.log("Request for " + pathName + " received");
+  if (typeof filename != 'undefined' && filename.indexOf("convert") > -1 ) {
+    // asking for a file to convert
+    var parmMap = parseQueryString(reqUrl);
+    var file = parmMap["file"];
+    var type = parmMap["type"];
+    console.log("file:"+file+" type:"+type);
+    dumpFile(file, type, res);
+    return;
+  }
+
+  res.writeHead(200, {'Content-Type': 'text/plain'});
+  res.write('handler didn\'t understand request');
+  console.log("handler didn't understand request");
+  res.end();
+});
 
 app.listen(3000);
