@@ -70,19 +70,41 @@ var CONST_ELF_HDR = {
 
 var ELF = (function() {
    var my = {};
-   my.ElfData = "",
+   my.ElfData = [],
    my.RawElfData = "",
    my.loaded = false, // nothing loaded/read yet or exhausted
    my.littleEndian = 0;
    my.lastAddress = 0;
+   //my.e_type = -1;
 
    my.parseJSON = function() {
-      my.ElfData = JSON.parse(my.RawElfData);
+    console.log("parseJSON");
+    jsonData = JSON.parse(my.RawElfData);
+    var addr = 0;
+    var dArray = 0;
+    do {
+      elfData = jsonData[addr];
+      console.log("parseJSON addr:" + addr + " data:" + elfData);
+      if (elfData !== undefined) {
+        // import
+        var baseAddr = addr;
+        var idx = 0;
+        do {
+          var byteVal = elfData[idx]
+          if (byteVal === undefined) {
+            byteVal = 0;
+          }
+          my.ElfData[baseAddr + idx] = elfData[idx];
+          idx = idx + 1;
+        } while (idx < 16);
+      }
+      addr = addr + 16;
+    } while (elfData !== undefined);
    };
 
    my.readByte = function(idx) {
       var item = my.ElfData[idx];
-      console.log("i:"+idx+" b:"+item);
+      //console.log("i:"+idx+" b:"+item);
       return item;
    };
 
@@ -100,6 +122,16 @@ var ELF = (function() {
       return longv;
    };
 
+   my.getValue = function (varname) {
+      console.log("getValue:"+varname+ " v:"+my[varname]);
+      return my[varname];
+   };
+
+   my.setValue = function (varname, value) {
+      console.log("setValue:"+varname+ " v:"+value);
+      my[varname] = value;
+   };
+
    my.parseElfHeader = function () {
      // 16 for eident
      var hdrStr = "";
@@ -107,63 +139,40 @@ var ELF = (function() {
      for (i=1; i<4; i += 1) {
         hdrStr += String.fromCharCode(my.readByte(i));
      }
-     console.log(hdrStr);
      if (hdrStr !== "ELF") {
         return false;
      }
      var index = 16;
+     alert("my:"+my);
+     alert("my.e_type:"+my.e_type);
      my.e_type = my.readWord(index);
+     my.setValue('e_type', my.e_type);
+     alert("my.e_type2:"+my.e_type);
      index += CONST_ELF_TYPES.Elf32_Half;
-     console.log("e_type:" + e_type);
-
      my.e_machine = my.readWord(index);
      index += CONST_ELF_TYPES.Elf32_Half;
-     console.log("e_machine:" + e_machine);
-
      my.e_version = my.readLong(index);
      index += CONST_ELF_TYPES.Elf32_Word;
-     console.log("e_version:" + e_version);
-
      my.e_entry = my.readLong(index);
      index += CONST_ELF_TYPES.Elf32_Addr;
-     console.log("e_entry:" + e_entry);
-
      my.e_phoff = my.readLong(index);
      index += CONST_ELF_TYPES.Elf32_Off;
-     console.log("e_phoff:" + e_phoff);
-
      my.e_shoff = my.readLong(index);
      index += CONST_ELF_TYPES.Elf32_Off;
-     console.log("e_shoff:" + e_shoff);
-
      my.e_flags = my.readLong(index);
      index += CONST_ELF_TYPES.Elf32_Word;
-     console.log("e_flags:" + e_flags);
-
      my.e_ehsize = my.readWord(index);
      index += CONST_ELF_TYPES.Elf32_Half;
-     console.log("e_ehsize:" + e_ehsize);
-
      my.e_phentsize = my.readWord(index);
      index += CONST_ELF_TYPES.Elf32_Half;
-     console.log("e_phentsize:" + e_phentsize);
-
      my.e_phnum = my.readWord(index);
      index += CONST_ELF_TYPES.Elf32_Half;
-     console.log("e_phnum:" + e_phnum);
-
      my.e_shentsize = my.readWord(index);
      index += CONST_ELF_TYPES.Elf32_Half;
-     console.log("e_shentsize:" + e_shentsize);
-
      my.e_shnum = my.readWord(index);
      index += CONST_ELF_TYPES.Elf32_Half;
-     console.log("e_shnum:" + e_shnum);
-
      my.e_shstrndx = my.readWord(index);
      index += CONST_ELF_TYPES.Elf32_Half;
-     console.log("e_shstrndx:" + e_shstrndx);
-
      return true;
    };
 
@@ -185,13 +194,13 @@ var ELF = (function() {
       my.ElfData = new Uint8Array(window.memory);
       //$("#source").load("adc.lst");
       //$("#elf").load("adc.json", function() { var parse = my.parseElf(); if (!parse) { console.log("not a good elf file"); } });
-      $.get(url, function( data ) {
-        console.log(data);
-        my.RawElfData = data;
+      console.log("ELF init URL:" + url);
+      $.getJSON(url, function( data ) {
+        my.RawElfData = JSON.stringify(data);
+        console.log("ELF init data:"+my.RawElfData);
         my.parseJSON();
         var parse = my.parseElf(); 
         if (!parse) { console.log("not a good elf file"); }
-        alert( "Load was performed." );
       });
    }
    return my;
