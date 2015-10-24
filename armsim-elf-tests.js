@@ -29,10 +29,17 @@ QUnit.test( "elf loader test", function( assert ) {
    console.log("test exit - i:"+16+" x:"+y);
    y = ELF.readByte(17);
    console.log("test exit - i:"+17+" x:"+y);
+});
 
+// async - see http://api.qunitjs.com/async/
+QUnit.test("ELF init test", function(assert) {
+   assert.expect(1);
+   var done = assert.async();
    // now do the big file
    ELF.init("http://localhost:3000/convert?file=/Users/jsymolon/arm/adc.elf&type=json"); // loads off of the URL
-   console.log("armsim-elf-tests elfData:"+elfData);
-   console.log("armsim-elf-tests elfData.e_type:"+elfData.e_type);
-   assert.equal(elfData.e_type, "", "");
+   setTimeout(function() {
+     assert.equal(ELF.getValue('e_type'), 2, "E Type for this file is 2 or Exec file");
+     console.log("armsim-elf-tests ELF.e_type:"+ELF.getValue('e_type'));
+     done();
+   }, 500);
 });
