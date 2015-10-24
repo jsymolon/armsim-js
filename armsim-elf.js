@@ -75,7 +75,6 @@ var ELF = (function() {
    my.loaded = false, // nothing loaded/read yet or exhausted
    my.littleEndian = 0;
    my.lastAddress = 0;
-   //my.e_type = -1;
 
    my.parseJSON = function() {
     console.log("parseJSON");
@@ -84,7 +83,7 @@ var ELF = (function() {
     var dArray = 0;
     do {
       elfData = jsonData[addr];
-      console.log("parseJSON addr:" + addr + " data:" + elfData);
+      //console.log("parseJSON addr:" + addr + " data:" + elfData);
       if (elfData !== undefined) {
         // import
         var baseAddr = addr;
@@ -143,11 +142,7 @@ var ELF = (function() {
         return false;
      }
      var index = 16;
-     alert("my:"+my);
-     alert("my.e_type:"+my.e_type);
-     my.e_type = my.readWord(index);
-     my.setValue('e_type', my.e_type);
-     alert("my.e_type2:"+my.e_type);
+     my.setValue('e_type', my.readWord(index));
      index += CONST_ELF_TYPES.Elf32_Half;
      my.e_machine = my.readWord(index);
      index += CONST_ELF_TYPES.Elf32_Half;
