@@ -6,6 +6,25 @@ Visualize basic MIPS architecture in a browser
 Note: This is unfinished work
 Author: Mianzhi Wang
 */
+var CONST_COND_CODES_TEXT = {
+    0: "EQ",
+    1: "NE",
+    2: "CS",
+    3: "CC",
+    4: "MI",
+    5: "PL",
+    6: "VS",
+    7: "VC",
+    8: "HI",
+    9: "LS",
+    10: "GE",
+    11: "LT",
+    12: "GT",
+    13: "LE",
+    14: "AL",
+    15: "--"
+};
+
 var ARMSim = (function (undefined) {
 var exports = {};
 // check support
@@ -246,108 +265,6 @@ exports.Memory = Memory;
 
 var CPU = (function () {
 	var exports = {};
-
-	// instruction set
-	var instructionTable = {
-		// load/store
-		'lb'	: ['1000 00ss ssst tttt iiii iiii iiii iiii','RC','S'], // $t=(byte)mem[$s+imm]
-		'dp'    : ['cccc 001p pppS nnnn dddd 2222 2222 2222']
-	};
-	// classify instructions from the table
-	(function () {
-		var cur, needRs, needRd, needRt, needImm,
-			INST_ALL = [],
-			INST_CAT = {	// instruction categorized by assembly format
-				RRR : [],
-				RRI : [],
-				RRA : [],
-				//RRC : [],
-				//RR  : [],
-				RI  : [],
-				RC  : [],
-				R 	: [],
-				I	: [],
-				N	: []
-			},
-			INST_REL_PC = [],		// instructions using relative PC
-			INST_IMM_SHIFT = [],	// instructions using immediate number for shifting 
-			INST_UNSIGNED = [],		// instructions with unsigned imm
-			INST_SIGNED = [];		// instructions with signed imm (need convertion when encoding)
-		// classify
-		for (var inst in instructionTable) {
-			cur = instructionTable[inst];
-			if (cur[0] && cur[0].length > 0) {
-				INST_CAT[cur[1]].push(inst);
-				INST_ALL.push(inst);
-				if (inst.charAt(0) == 'b') {
-					INST_REL_PC.push(inst);
-				}
-				if (cur[0].indexOf('a') > 0) {
-					INST_IMM_SHIFT.push(inst);
-				}
-				if (cur[2] == 'U') {
-					INST_UNSIGNED.push(inst);
-				}
-				if (cur[2] == 'S') {
-					INST_SIGNED.push(inst);
-				}
-			}
-		}
-		// build translators
-		var translators = {}, funcBody,
-			instCode, funcCode,
-			immStartIdx, immEndIdx, immLength;
-		for (var inst in instructionTable) {
-			funcBody = '';
-			cur = instructionTable[inst][0]
-					.replace(/c/g,'0') // @TODO: break code support
-					.replace(/a/g,'i') // a is also i
-					.replace(/-/g,'0')
-					.replace(/ /g,''); // no need for format
-			instCode = parseInt(cur.slice(0, 6), 2);
-			// NOTE: becareful with JavaScripts casting here
-			// 0xffffffff > 0
-			// 0xffffffff & 0xffffffff = -1
-			funcBody += 'var base = ' + (instCode << 26) + ';\n';
-			// rs, rd, rt
-			if (cur.indexOf('s') > 0) {
-				funcBody += 'base |= (info.rs << 21);\n';
-			}
-			if (cur.indexOf('d') > 0 ) {
-				funcBody += 'base |= (info.rd << 11);\n';
-			}
-			if (cur.indexOf('t') > 0 ) {
-				funcBody += 'base |= (info.rt << 16);\n';
-			}
-			// imm
-			immStartIdx = cur.indexOf('i');
-			immEndIdx = cur.lastIndexOf('i');
-			immLength = immEndIdx - immStartIdx;
-			if (immLength > 0) {
-				if (INST_SIGNED.indexOf(inst) >= 0) {
-					// convert signed immediate number to complement form
-					funcBody += 'base |= (((info.imm<0)?' + (1<<(immLength+1)) + '+info.imm:info.imm) << ' + (31-immEndIdx) + ');\n';
-				} else {
-					funcBody += 'base |= (info.imm << ' + (31-immEndIdx) + ');\n';
-				}
-			}
-			// function code
-			if (immEndIdx < 26) {
-				//console.log(cur.slice(26, 32));
-				funcCode = parseInt(cur.slice(26, 32), 2);
-				funcBody += 'base |= ' + (funcCode) + ';\n';
-			}
-			funcBody += 'if (base < 0) base = 4294967296 + base;\n'
-			funcBody += 'return base;';
-			translators[inst] = new Function('info', funcBody);
-		}
-		exports.INST_UNSIGNED = INST_UNSIGNED;
-		exports.INST_IMM_SHIFT = INST_IMM_SHIFT;
-		exports.INST_REL_PC = INST_REL_PC;
-		exports.INST_CAT = INST_CAT;
-		exports.INST_ALL = INST_ALL;
-		exports.translators = translators;
-	})();
 
 	var SIM_MODE = {
 		FUNCTIONAL : 0,
